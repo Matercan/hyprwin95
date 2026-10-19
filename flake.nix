@@ -1,10 +1,12 @@
 {
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
+  inputs.nixpkgs.follows = "hyprland/nixpkgs";
+  inputs.hyprland.url = "github:Hyprwm/Hyprland";
 
   outputs =
     {
       self,
       nixpkgs,
+      hyprland,
     }:
     let
       systems = [
@@ -19,10 +21,18 @@
         default = pkgsForEach.${system}.callPackage ./nix/package.nix { };
       });
 
-      devShells = forEachSystem (system: {
-        default = pkgsForEach.${system}.callPackage ./nix/shell.nix { };
-      });
-
+      devShells = forEachSystem (system:
+        with pkgsForEach.${system}; {
+          default = mkShell.override {stdenv = gcc14Stdenv;} {
+            name = "hyprland-plugins";
+            nativeBuildInputs = [
+              bear
+              clang-tools
+            ];
+            buildInputs = [hyprland.packages.${system}.hyprland];
+            inputsFrom = [hyprland.packages.${system}.hyprland];
+          };
+        });
       hydraJobs = self.packages;
     };
 }

@@ -1,24 +1,7 @@
 {
   lib,
   stdenv,
-  pkg-config,
-  gnumake,
-  hyprutils,
-  hyprlang,
-  hyprgraphics,
-  aquamarine,
-  hyprcursor,
-  pixman,
-  libdrm,
   hyprland,
-  libinput,
-  eudev,      
-  wayland,    
-  libxkbcommon,
-  libglvnd,
-  cairo,
-  xcbutil,
-  mesa
 }:
 stdenv.mkDerivation {
   pname = "hyprwin95";
@@ -36,29 +19,7 @@ stdenv.mkDerivation {
     ];
   };
 
-  nativeBuildInputs = [
-    gnumake
-    pkg-config
-  ];
-
-  buildInputs = [
-    xcbutil
-    cairo
-    hyprutils
-    hyprlang
-    hyprgraphics
-    hyprcursor
-    aquamarine
-    pixman
-    libdrm
-    hyprland
-    libinput
-    eudev
-    wayland
-    libxkbcommon
-    libglvnd
-    mesa
-  ];
+  inherit (hyprland) nativeBuildInputs;
 
   buildPhase = ''
     runHook preBuild
