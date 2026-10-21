@@ -9,7 +9,7 @@ CXXFLAGS += -shared -fPIC -std=c++2b -Wno-c++11-narrowing
 INCLUDES = `pkg-config --cflags pixman-1 libdrm hyprland libinput libudev wayland-server xkbcommon`
 LIBS =
 
-SRC = src/main.cpp src/borderDeco.cpp
+SRC = src/main.cpp src/borderDeco.cpp src/borderppPassElement.cpp
 TARGET = lib/hyprwin95.so
 
 all: $(TARGET)

@@ -1,12 +1,19 @@
+#include "config/ConfigValue.hpp"
 #include "config/shared/Types.hpp"
+#include "config/shared/complex/ComplexDataTypes.hpp"
+#include "debug/log/Logger.hpp"
 #include "desktop/DesktopTypes.hpp"
 #include "globals.hpp"
+#include "hyprutils/cli/Logger.hpp"
 #include "hyprutils/memory/UniquePtr.hpp"
+#include "render/OpenGL.hpp"
 #include "render/decorations/DecorationPositioner.hpp"
-#include "render/pass/BorderPassElement.hpp"
+
+#include "borderppPassElement.hpp"
 #include "borderDeco.hpp"
 
 #include <hyprland/src/render/decorations/CHyprBorderDecoration.hpp>
+#include <hyprland/src/desktop/view/window/WindowPresentation.hpp>
 #include <hyprland/src/desktop/view/window/Window.hpp>
 #include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
 #include <hyprland/src/render/Renderer.hpp>
@@ -93,18 +100,69 @@ PHLWINDOW Hyprwin95Border::getOwner() {
 
 void Hyprwin95Border::draw(Render::CRenderContext& ctx, PHLMONITOR pMonitor, float const& a,
                            const Render::SWindowRenderPresentation& renderRepresentation) {
+  LOG(Hyprutils::CLI::LOG_DEBUG, "[Hyprwin95] draw() called for window");
   if (!Desktop::View::validMapped(pWindow)) return;
 
   const auto PHLWINDOW = pWindow.lock();
 
   if (!PHLWINDOW->m_ruleApplicator->decorate().valueOrDefault()) return;
 
-  CBorderPassElement::SBorderData data;
-  data.window     = getOwner();
-  data.a          = a;
-  data.box        = blastRelativeBox.translate(lastWindowPos).expand(2);
-  data.borderSize = fLastThickness;
-  data.grad1      = configColor(globalState->config.borderColor->value());
+  Hyprwin95PPPassElement::SBorderPPData data;
+  data.deco = this;
+  data.a    = 1.0F;
 
-  g_pHyprRenderer->addPassElement(ctx, makeUnique<CBorderPassElement>(data));
+  LOG(Hyprutils::CLI::LOG_DEBUG, "Adding pass element");
+  g_pHyprRenderer->addPassElement(ctx, makeUnique<Hyprwin95PPPassElement>(data));
+}
+
+void Hyprwin95Border::drawPass(Render::CRenderContext& ctx, PHLMONITOR pMonitor, float const& a) {
+  const auto PWINDOW = pWindow.lock();
+
+  static auto PBORDERSIZE = CConfigValue<Config::INTEGER>("general:border_size");
+
+  if (bAssignedGeomtry.width < seExtents.topLeft.x + 1 ||
+      bAssignedGeomtry.height < seExtents.topLeft.y + 1)
+    return;
+
+  const auto PWORKSPACE = PWINDOW->m_workspace;
+  const auto WORKSPACE_OFFSET =
+    PWORKSPACE && !(PWINDOW->m_state & Desktop::View::WINDOW_STATE_PINNED)
+      ? PWORKSPACE->m_renderOffset->value()
+      : Vector2D();
+
+  CBox fullBox = bAssignedGeomtry;
+  fullBox.translate(g_pDecorationPositioner->getEdgeDefinedPoint(
+    DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_TOP | DECORATION_EDGE_RIGHT,
+    PWINDOW));
+
+  fullBox.translate(PWINDOW->presentation().floatingOffset() - pMonitor->m_position +
+                    WORKSPACE_OFFSET);
+
+  if (fullBox.width < 1 || fullBox.height < 1) return;
+
+  double fullThickness = globalState->config.borderSize->value() == 0
+                           ? *PBORDERSIZE
+                           : globalState->config.borderSize->value();
+
+  fullBox.expand(-fullThickness).scale(pMonitor->m_scale).round();
+
+  const int THIS_BORDER_SIZE = fullThickness;
+
+  if (fullBox.width < 1 || fullBox.height < 1) return;
+
+  g_pHyprOpenGL->scissor(ctx, nullptr);
+
+  g_pHyprOpenGL->renderBorder(
+    ctx, fullBox, Config::CGradientValueData(configColor(globalState->config.borderColor->value())),
+    CHyprOpenGLImpl::SBorderRenderData(
+      {.round = 0, .borderSize = THIS_BORDER_SIZE, .a = a, .outerRound = -1}));
+
+  seExtents = {{fullThickness, fullThickness}, {fullThickness, fullThickness}};
+
+  blastRelativeBox = CBox{0, 0, lastWindowSize.x, lastWindowSize.y}.addExtents(seExtents);
+
+  if (fullThickness != fLastThickness) {
+    fLastThickness = fullThickness;
+    g_pDecorationPositioner->repositionDeco(this);
+  }
 }

@@ -178,7 +178,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
   globalState->config.buttonPadding = makeShared<Config::Values::CIntValue>(
     "plugin:hyprwin95:button_padding", "Difference between button border and texture", 0);
   globalState->config.borderSize =
-    makeShared<Config::Values::CIntValue>("plugin:hyprwin95:border_size", "Size of the border", 1);
+    makeShared<Config::Values::CIntValue>("plugin:hyprwin95:border_size", "Size of the border", 10);
   globalState->config.barTextFont = makeShared<Config::Values::CStringValue>(
     "plugin:hyprwin95:bar_text_font", "Text font of the bar", "WIN95FA");
 

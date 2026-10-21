@@ -1,3 +1,4 @@
+#include "borderppPassElement.hpp"
 #include "helpers/memory/Memory.hpp"
 #include <hyprland/src/desktop/DesktopTypes.hpp>
 #include <hyprland/src/render/pass/ClearPassElement.hpp>
@@ -32,7 +33,7 @@ public:
   UP<Hyprwin95Bar>    bar;
 
 private:
-  void drawPass(Render::CRenderContext, PHLMONITOR, float const&);
+  void drawPass(Render::CRenderContext&, PHLMONITOR, float const&);
 
   SBoxExtents  seExtents;
   PHLWINDOWREF pWindow;
@@ -45,5 +46,5 @@ private:
 
   double fLastThickness = 0;
 
-  friend class CBorderPassElement;
+  friend class Hyprwin95PPPassElement;
 };
