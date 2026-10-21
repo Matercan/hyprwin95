@@ -144,20 +144,45 @@ void Hyprwin95Border::drawPass(Render::CRenderContext& ctx, PHLMONITOR pMonitor,
                            ? *PBORDERSIZE
                            : globalState->config.borderSize->value();
 
-  fullBox.expand(-fullThickness).scale(pMonitor->m_scale).round();
+  fullBox.scale(pMonitor->m_scale).round();
 
-  const int THIS_BORDER_SIZE = fullThickness;
+  double horizontalSize = fullThickness * pMonitor->m_scale;
+  double verticalSize   = fullThickness * pMonitor->m_scale * 0.5f;
 
   if (fullBox.width < 1 || fullBox.height < 1) return;
 
   g_pHyprOpenGL->scissor(ctx, nullptr);
 
-  g_pHyprOpenGL->renderBorder(
-    ctx, fullBox, Config::CGradientValueData(configColor(globalState->config.borderColor->value())),
-    CHyprOpenGLImpl::SBorderRenderData(
-      {.round = 0, .borderSize = THIS_BORDER_SIZE, .a = a, .outerRound = -1}));
+  // Top border
+  CBox topBox = fullBox;
+  topBox.h    = horizontalSize;
+  topBox.x += verticalSize * 0.5f;
+  topBox.w -= verticalSize * 2;
 
-  seExtents = {{fullThickness, fullThickness}, {fullThickness, fullThickness}};
+  // Bottom Border
+  topBox.x += verticalSize * 0.5f;
+  CBox bottomBox = topBox;
+  bottomBox.y    = fullBox.y + fullBox.h - horizontalSize;
+
+  // Left border
+  CBox leftBox = fullBox;
+  leftBox.w    = verticalSize;
+  leftBox.x    = topBox.x;
+  leftBox.y += horizontalSize;
+  leftBox.h -= horizontalSize * 2;
+
+  // Right border
+  CBox rightBox = leftBox;
+  rightBox.x    = topBox.x + topBox.w - verticalSize;
+
+  const auto color = CHyprColor(globalState->config.barColor->value());
+
+  g_pHyprOpenGL->renderRect(ctx, topBox, color, {});
+  g_pHyprOpenGL->renderRect(ctx, bottomBox, color, {});
+  g_pHyprOpenGL->renderRect(ctx, rightBox, color, {});
+  g_pHyprOpenGL->renderRect(ctx, leftBox, color, {});
+
+  seExtents = {{verticalSize, horizontalSize}, {verticalSize, horizontalSize}};
 
   blastRelativeBox = CBox{0, 0, lastWindowSize.x, lastWindowSize.y}.addExtents(seExtents);
 
