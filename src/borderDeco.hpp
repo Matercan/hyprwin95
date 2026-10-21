@@ -1,5 +1,6 @@
 #include "helpers/memory/Memory.hpp"
 #include <hyprland/src/desktop/DesktopTypes.hpp>
+#include <hyprland/src/render/pass/ClearPassElement.hpp>
 #include <hyprland/src/render/decorations/DecorationPositioner.hpp>
 #include <hyprland/src/render/decorations/IHyprWindowDecoration.hpp>
 #include <hyprutils/math/Box.hpp>
@@ -44,5 +45,5 @@ private:
 
   double fLastThickness = 0;
 
-  friend class CBorderPPPassElement;
+  friend class CBorderPassElement;
 };
