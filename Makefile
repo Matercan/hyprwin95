@@ -1,9 +1,15 @@
+ ifeq ($(CXX),g++)
+		 EXTRA_FLAGS = --no-gnu-unique
+ else
+		 EXTRA_FLAGS =
+ endif
+
 CXXFLAGS ?= -O2
 CXXFLAGS += -shared -fPIC -std=c++2b -Wno-c++11-narrowing
 INCLUDES = `pkg-config --cflags pixman-1 libdrm hyprland libinput libudev wayland-server xkbcommon`
 LIBS =
 
-SRC = src/main.cpp
+SRC = src/main.cpp src/borderDeco.cpp
 TARGET = lib/hyprwin95.so
 
 all: $(TARGET)

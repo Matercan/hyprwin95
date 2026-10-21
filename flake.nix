@@ -21,18 +21,23 @@
         default = pkgsForEach.${system}.callPackage ./nix/package.nix { };
       });
 
-      devShells = forEachSystem (system:
-        with pkgsForEach.${system}; {
-          default = mkShell.override {stdenv = gcc14Stdenv;} {
+      devShells = forEachSystem (
+        system:
+        let
+          pkgs = pkgsForEach.${system};
+          hl = hyprland.packages.${system}.hyprland;
+        in
+        {
+          default = pkgs.mkShell.override { stdenv = pkgs.gcc16Stdenv; } {
             name = "hyprland-plugins";
             nativeBuildInputs = [
-              bear
-              clang-tools
+              pkgs.bear
+              pkgs.clang-tools
             ];
-            buildInputs = [hyprland.packages.${system}.hyprland];
-            inputsFrom = [hyprland.packages.${system}.hyprland];
+            inputsFrom = [ hl ];
+            buildInputs = [ hl.dev ];
           };
-        });
-      hydraJobs = self.packages;
+        }
+      );
     };
 }

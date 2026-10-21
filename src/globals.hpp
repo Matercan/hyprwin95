@@ -17,7 +17,7 @@ inline HANDLE PHANDLE = nullptr;
 struct Hyprwin95Button {
   std::string          cmd   = "";
   CHyprColor           fgCol = CHyprColor(0, 0, 0, 0);
-  CHyprColor           bgcol = CHyprColor(0, 0, 0, 0);
+  CHyprColor           bgCol = CHyprColor(0, 0, 0, 0);
   float                size  = 10;
   std::string          icon  = "";
   SP<Render::ITexture> iconTex;
@@ -25,17 +25,18 @@ struct Hyprwin95Button {
 };
 
 class Hyprwin95Bar;
+class Hyprwin95Border;
 
 struct GlobalState {
-  std::vector<Hyprwin95Button> buttons;
-  WP<Hyprwin95Bar>             bar;
-  uint32_t                     barColorRuleIdx   = 0;
-  uint32_t                     titleColorRuleidx = 0;
-  uint32_t                     borderColorRuleIdx = 0;
+  std::vector<Hyprwin95Button>  buttons;
+  std::vector<WP<Hyprwin95Border>> borders;
+  uint32_t                      barColorRuleIdx    = 0;
+  uint32_t                      titleColorRuleidx  = 0;
+  uint32_t                      borderColorRuleIdx = 0;
 
   struct {
-    SP<Config::Values::CColorValue> barColor, textColor, activeButtonColor, borderColor;
-    SP<Config::Values::CIntValue> barHeight, barTextSize, barPadding, buttonPadding, borderSize;
+    SP<Config::Values::CColorValue>  barColor, textColor, activeButtonColor, borderColor;
+    SP<Config::Values::CIntValue>    barHeight, barTextSize, barPadding, buttonPadding, borderSize;
     SP<Config::Values::CStringValue> barTextFont;
   } config;
 };
