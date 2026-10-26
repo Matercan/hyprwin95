@@ -163,14 +163,14 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
   globalState->config.barColor = makeShared<Config::Values::CColorValue>(
     "plugin:hyprwin95:bar_color", "Change the bar color", 0xf1cff2ff);
   globalState->config.borderColor = makeShared<Config::Values::CColorValue>(
-    "plugin:hyprwin95:border_color", "Change the border color", 0x5752b0);
+    "plugin:hyprwin95:border_color", "Change the border color", 0x524baaff);
   globalState->config.activeButtonColor = makeShared<Config::Values::CColorValue>(
     "plugin:hyprwin95:active_button_color",
     "Change the color of the button when the mouse if over it", 0xab334cff);
   globalState->config.textColor = makeShared<Config::Values::CColorValue>(
     "plugin:hyprwin95:text_color", "Change the color of the text", 0x5e3b9bff);
   globalState->config.barHeight =
-    makeShared<Config::Values::CIntValue>("plugin::hyprwin95::bar_height", "Height of the bar", 10);
+    makeShared<Config::Values::CIntValue>("plugin::hyprwin95::bar_height", "Height of the bar", 24);
   globalState->config.barTextSize =
     makeShared<Config::Values::CIntValue>("plugin:hyprwin95:bar_text_size", "Size of bar text", 8);
   globalState->config.barPadding = makeShared<Config::Values::CIntValue>(
@@ -178,7 +178,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
   globalState->config.buttonPadding = makeShared<Config::Values::CIntValue>(
     "plugin:hyprwin95:button_padding", "Difference between button border and texture", 0);
   globalState->config.borderSize =
-    makeShared<Config::Values::CIntValue>("plugin:hyprwin95:border_size", "Size of the border", 10);
+    makeShared<Config::Values::CIntValue>("plugin:hyprwin95:border_size", "Size of the border", 2);
   globalState->config.barTextFont = makeShared<Config::Values::CStringValue>(
     "plugin:hyprwin95:bar_text_font", "Text font of the bar", "WIN95FA");
 

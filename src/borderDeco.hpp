@@ -44,7 +44,8 @@ private:
   Vector2D lastWindowPos;
   Vector2D lastWindowSize;
 
-  double fLastThickness = 0;
+  double fLastWidth = 0;
+  double fLastHeight = 0;
 
   friend class Hyprwin95PPPassElement;
 };

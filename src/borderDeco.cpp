@@ -1,6 +1,5 @@
 #include "config/ConfigValue.hpp"
 #include "config/shared/Types.hpp"
-#include "config/shared/complex/ComplexDataTypes.hpp"
 #include "debug/log/Logger.hpp"
 #include "desktop/DesktopTypes.hpp"
 #include "globals.hpp"
@@ -24,6 +23,14 @@ static CHyprColor configColor(Config::INTEGER color) {
   return CHyprColor{sc<uint64_t>(color)};
 }
 
+static std::pair<double, double> borderDimensions(double configSize = 0) {
+  static double size       = configSize == 0 ? globalState->config.barHeight->value() : configSize;
+  static double borderSize = globalState->config.borderSize->value() * 2;
+  auto          x          = size + borderSize * 2;
+  auto          y          = size * (1.0f / 3.0f) + borderSize * 2;
+  return {x, y};
+}
+
 Hyprwin95Border::Hyprwin95Border(PHLWINDOW pwindow) : IHyprWindowDecoration(pwindow) {
   this->pWindow        = pwindow;
   this->lastWindowPos  = pWindow->position(Desktop::View::IGeometric::GEOMETRIC_CURRENT);
@@ -41,8 +48,8 @@ Hyprwin95Border::~Hyprwin95Border() {
 void Hyprwin95Border::updateRules() {}
 
 void Hyprwin95Border::onConfigReloaded() {
-
   damageEntire();
+  g_pDecorationPositioner->repositionDeco(this);
 }
 SDecorationPositioningInfo Hyprwin95Border::getPositioningInfo() {
   const auto PHWINDOW = pWindow.lock();
@@ -54,15 +61,16 @@ SDecorationPositioningInfo Hyprwin95Border::getPositioningInfo() {
   info.edges =
     DECORATION_EDGE_BOTTOM | DECORATION_EDGE_LEFT | DECORATION_EDGE_TOP | DECORATION_EDGE_RIGHT;
 
-  if (fLastThickness == 0) {
-    double size         = globalState->config.borderSize->value();
-    info.desiredExtents = {{size, size}, {size, size}};
-    fLastThickness      = size;
+  if (fLastWidth == 0 || fLastHeight == 0) {
+    auto [wThickness, hThickness] = borderDimensions();
+    info.desiredExtents           = {{hThickness, wThickness}, {hThickness, wThickness}};
+    fLastWidth                    = wThickness;
+    fLastHeight                   = hThickness;
   } else if (!PHWINDOW->m_ruleApplicator->decorate().valueOrDefault()) {
     int size            = 0;
     info.desiredExtents = {{size, size}, {size, size}};
   } else {
-    info.desiredExtents = {{fLastThickness, fLastThickness}, {fLastThickness, fLastThickness}};
+    info.desiredExtents = {{fLastHeight, fLastWidth}, {fLastHeight, fLastWidth}};
   }
 
   return info;
@@ -140,54 +148,69 @@ void Hyprwin95Border::drawPass(Render::CRenderContext& ctx, PHLMONITOR pMonitor,
 
   if (fullBox.width < 1 || fullBox.height < 1) return;
 
-  double fullThickness = globalState->config.borderSize->value() == 0
+  double fullThickness = globalState->config.barHeight->value() == 0
                            ? *PBORDERSIZE
-                           : globalState->config.borderSize->value();
+                           : globalState->config.barHeight->value();
+
+  auto [wThickness, hThickness] = borderDimensions(fullThickness);
+
+  auto windowBox = fullBox;
+  windowBox.addExtents({{-hThickness, -wThickness}, {-hThickness, -wThickness}})
+    .scale(pMonitor->m_scale);
 
   fullBox.scale(pMonitor->m_scale).round();
 
-  double horizontalSize = fullThickness * pMonitor->m_scale;
-  double verticalSize   = fullThickness * pMonitor->m_scale * 0.5f;
-
   if (fullBox.width < 1 || fullBox.height < 1) return;
+  const auto barColor    = CHyprColor(globalState->config.barColor->value());
+  const auto accentColor = configColor(globalState->config.borderColor->value());
+  const auto borderSize  = globalState->config.borderSize->value();
+
+  auto innerBarData = CHyprOpenGLImpl::SBorderRenderData(
+    {.round = 0, .borderSize = borderSize, .a = 1, .outerRound = -1});
 
   g_pHyprOpenGL->scissor(ctx, nullptr);
+
+  g_pHyprOpenGL->renderBorder(ctx, fullBox, accentColor, innerBarData);
+  g_pHyprOpenGL->renderBorder(ctx, windowBox, accentColor, innerBarData);
+  seExtents = {{hThickness, wThickness}, {hThickness, wThickness}};
+
+  fullBox.expand(-1);
+
+  double horizontalSize = wThickness - borderSize * 2;
+  double verticalSize   = hThickness - borderSize * 2;
 
   // Top border
   CBox topBox = fullBox;
   topBox.h    = horizontalSize;
-  topBox.x += verticalSize * 0.5f;
-  topBox.w -= verticalSize * 2;
 
   // Bottom Border
-  topBox.x += verticalSize * 0.5f;
   CBox bottomBox = topBox;
   bottomBox.y    = fullBox.y + fullBox.h - horizontalSize;
+  bottomBox.h    = horizontalSize;
 
   // Left border
   CBox leftBox = fullBox;
   leftBox.w    = verticalSize;
-  leftBox.x    = topBox.x;
   leftBox.y += horizontalSize;
   leftBox.h -= horizontalSize * 2;
 
   // Right border
   CBox rightBox = leftBox;
   rightBox.x    = topBox.x + topBox.w - verticalSize;
+  rightBox.w    = verticalSize;
 
-  const auto color = CHyprColor(globalState->config.barColor->value());
+  g_pHyprOpenGL->renderRect(ctx, topBox, barColor, {});
+  g_pHyprOpenGL->renderRect(ctx, bottomBox, barColor, {});
+  g_pHyprOpenGL->renderRect(ctx, rightBox, barColor, {});
+  g_pHyprOpenGL->renderRect(ctx, leftBox, barColor, {});
 
-  g_pHyprOpenGL->renderRect(ctx, topBox, color, {});
-  g_pHyprOpenGL->renderRect(ctx, bottomBox, color, {});
-  g_pHyprOpenGL->renderRect(ctx, rightBox, color, {});
-  g_pHyprOpenGL->renderRect(ctx, leftBox, color, {});
-
-  seExtents = {{verticalSize, horizontalSize}, {verticalSize, horizontalSize}};
+  seExtents = {{hThickness, wThickness}, {hThickness, wThickness}};
 
   blastRelativeBox = CBox{0, 0, lastWindowSize.x, lastWindowSize.y}.addExtents(seExtents);
 
-  if (fullThickness != fLastThickness) {
-    fLastThickness = fullThickness;
+  if (hThickness != fLastHeight || wThickness != fLastWidth) {
+    fLastWidth  = wThickness;
+    fLastHeight = hThickness;
     g_pDecorationPositioner->repositionDeco(this);
   }
 }
